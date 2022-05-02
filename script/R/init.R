@@ -1,0 +1,28 @@
+my_package <-c("tidyverse",
+              "broom",
+              "coefplot",
+              "cowplot",
+              "gapminder",
+              "GGally",
+              "ggrepel",
+              "ggridges",
+              "gridExtra",
+              "here",
+              "interplot",
+              "margins",
+              "maps",
+              "mapproj",
+              "mapdata",
+              "MASS",
+              "quantreg",
+              "rlang",
+              "scales",
+              "survey",
+              "srvyr",
+              "viridis",
+              "viridisLite",
+              "devtools")
+install.packages(my_package)
+devtools::install_github("kjhealy/socviz")
+# .libPaths('C:/Program Files/R/R-4.1.2/library')
+# https://teratail.com/questions/65283
