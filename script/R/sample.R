@@ -43,3 +43,13 @@ p + geom_line(color = "gray70",
   labs(x = "year",
        y = "log GDP per capita",
        title = "log GDP per capita on Five Continents")
+
+#######################################
+# plot4
+#######################################
+p <- ggplot2::ggplot(data = gapminder,
+                     mapping = aes(x = gdpPercap,y = lifeExp,color = continent,
+                                   fill = continent))
+p + geom_point()+
+  geom_smooth(method = "loess")+
+  scale_x_log10()
