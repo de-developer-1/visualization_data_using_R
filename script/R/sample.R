@@ -4,6 +4,7 @@
 library(gapminder)
 library(ggplot2)
 library(ggrepel)
+library(socviz)
 
 #######################################
 # plot
@@ -53,3 +54,10 @@ p <- ggplot2::ggplot(data = gapminder,
 p + geom_point()+
   geom_smooth(method = "loess")+
   scale_x_log10()
+
+#######################################
+# plot5
+#######################################
+p <- ggplot2::ggplot(data = gss_sm,
+                     mapping = aes(x = bigregion))
+p + geom_bar()
