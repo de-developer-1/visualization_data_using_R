@@ -61,3 +61,10 @@ p + geom_point()+
 p <- ggplot2::ggplot(data = gss_sm,
                      mapping = aes(x = bigregion))
 p + geom_bar()
+
+#######################################
+# plot6
+#######################################
+p <- ggplot2::ggplot(data = gss_sm,
+                     mapping = aes(x = bigregion))
+p + geom_bar(mapping = aes(y = after_stat(prop),group = 1))
