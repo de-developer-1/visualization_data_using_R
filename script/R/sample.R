@@ -68,3 +68,10 @@ p + geom_bar()
 p <- ggplot2::ggplot(data = gss_sm,
                      mapping = aes(x = bigregion))
 p + geom_bar(mapping = aes(y = after_stat(prop),group = 1))
+
+#######################################
+# plot7
+#######################################
+p <- ggplot2::ggplot(data = gss_sm,
+                     mapping = aes(x = religion,fill = religion))
+p + geom_bar() + guides(fill = "none")
