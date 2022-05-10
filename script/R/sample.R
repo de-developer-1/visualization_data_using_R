@@ -82,3 +82,23 @@ p + geom_bar() + guides(fill = "none")
 p <- ggplot2::ggplot(data = gss_sm,
                      mapping = aes(x = bigregion,fill = religion))
 p + geom_bar(position = "fill") 
+
+#######################################
+# plot9
+#######################################
+p <- ggplot2::ggplot(data = gss_sm,
+                     mapping = aes(x = bigregion,fill = religion))
+
+p + geom_bar(position = "dodge",
+             mapping = aes(y = after_stat(prop),
+                           group = religion))
+
+#######################################
+# plot10
+#######################################
+p <- ggplot2::ggplot(data = gss_sm,
+                     mapping = aes(x = religion))
+p + geom_bar(position = "dodge",
+             mapping = aes(y = after_stat(prop),
+                           group = bigregion)) +
+  facet_wrap( ~ bigregion,ncol = 2) 
