@@ -109,3 +109,11 @@ p + geom_bar(position = "dodge",
 p <- ggplot2::ggplot(data = midwest,
                      mapping = aes(x = area))
 p + geom_histogram(bins = 10)
+
+#######################################
+# plot12
+#######################################
+oh_wi <- c("OH","WI")
+p <- ggplot2::ggplot(data = subset(midwest,subset = state %in% oh_wi),
+                     mapping = aes(x = percollege,fill = state))
+p + geom_histogram(alpha = 0.4,bins = 20)
