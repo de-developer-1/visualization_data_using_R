@@ -102,3 +102,10 @@ p + geom_bar(position = "dodge",
              mapping = aes(y = after_stat(prop),
                            group = bigregion)) +
   facet_wrap( ~ bigregion,ncol = 2) 
+
+#######################################
+# plot11
+#######################################
+p <- ggplot2::ggplot(data = midwest,
+                     mapping = aes(x = area))
+p + geom_histogram(bins = 10)
