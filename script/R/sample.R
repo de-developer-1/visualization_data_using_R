@@ -118,3 +118,9 @@ p <- ggplot2::ggplot(data = subset(midwest,subset = state %in% oh_wi),
                      mapping = aes(x = percollege,fill = state))
 p + geom_histogram(alpha = 0.4,bins = 20)
 
+#######################################
+# plot13
+#######################################
+p <- ggplot2::ggplot(data = midwest,
+                     mapping = aes(x = area,fill = state, color = state))
+p + geom_density(alpha = 0.3)
