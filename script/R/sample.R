@@ -133,3 +133,4 @@ p <- ggplot2::ggplot(data = subset(midwest,subset = state %in% oh_wi),
                      mapping = aes(x = area,fill = state,color = state))
 p + geom_density(alpha = 0.3,
                  mapping = (aes (y=after_stat(scaled))))
+
