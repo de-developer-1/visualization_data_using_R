@@ -140,3 +140,7 @@ p + geom_density(alpha = 0.3,
 p <- ggplot2::ggplot(data = titanic,
                      mapping = aes(x = fate,y = percent, fill = sex))
 p + geom_bar(position = "dodge",stat = "identity") + theme(legend.position = "top")
+
+#######################################
+# plot16
+#######################################
