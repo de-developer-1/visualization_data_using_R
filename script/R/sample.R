@@ -144,3 +144,4 @@ p + geom_bar(position = "dodge",stat = "identity") + theme(legend.position = "to
 #######################################
 # plot16
 #######################################
+
