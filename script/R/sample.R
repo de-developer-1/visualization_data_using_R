@@ -144,4 +144,10 @@ p + geom_bar(position = "dodge",stat = "identity") + theme(legend.position = "to
 #######################################
 # plot16
 #######################################
-
+p <- ggplot2::ggplot(data = oecd_sum,
+                     mapping = aes(x = year, y = diff ,fill = hi_lo))
+p + geom_col() + guides(fill = "none") +
+  labs(x = NULL , y = "Difference in Years",
+       title = "アメリカの平均寿命格差",
+       substitle = "1960-2015年におけるアメリカとOECD諸国の平均寿命の差",
+       caption = "データ:チャート")
