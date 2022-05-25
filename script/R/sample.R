@@ -5,7 +5,7 @@ library(gapminder)
 library(ggplot2)
 library(ggrepel)
 library(socviz)
-
+s
 #######################################
 # plot
 #######################################
@@ -155,3 +155,4 @@ p + geom_col() + guides(fill = "none") +
 #######################################
 # plot17
 #######################################
+#rel_by_region
