@@ -157,3 +157,5 @@ p + geom_col() + guides(fill = "none") +
 #######################################
 #rel_by_region
 
+
+
