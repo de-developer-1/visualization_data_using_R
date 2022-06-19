@@ -5,7 +5,7 @@ library(gapminder)
 library(ggplot2)
 library(ggrepel)
 library(socviz)
-s
+
 #######################################
 # plot
 #######################################
