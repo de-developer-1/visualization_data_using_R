@@ -5,7 +5,8 @@ library(gapminder)
 library(ggplot2)
 library(ggrepel)
 library(socviz)
-s
+library(dplyr)
+
 #######################################
 # plot
 #######################################
@@ -155,5 +156,27 @@ p + geom_col() + guides(fill = "none") +
 #######################################
 # plot17
 #######################################
-#rel_by_region
 
+rel_by_region <- gss_sm %>% 
+  dplyr::group_by(bigregion,religion) %>% 
+  dplyr::summarise(N = n()) %>% 
+  dplyr::mutate(freq = N/sum(N),
+         pct = round((freq * 100),0))
+
+# 各地域における信徒数の割合
+p<- ggplot(rel_by_region,aes(x =  bigregion, y = pct ,fill = religion))
+p + geom_col(position ="dodge2") +
+  labs(x = "Region", y = "percent", fill = "Religion") +
+  theme(legend.position = "top")
+
+# facetを用いた各地域における信徒数の割合
+p <- ggplot(rel_by_region,aes(x = religion,y = pct, fill = religion))
+p + geom_col(position ="dodge2") +
+  labs(x = NULL, y = "percent", fill = "Religion") +
+  guides(fill = "none") +
+  coord_flip()+
+  facet_grid(~bigregion)
+
+#######################################
+# plot18
+#######################################
