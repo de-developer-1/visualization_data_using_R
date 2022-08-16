@@ -6,7 +6,14 @@ library(ggplot2)
 library(ggrepel)
 library(socviz)
 library(dplyr)
-
+library(broom)
+library(survival)
+library(margins)
+library(survey)
+library(srvyr)
+library(coefplot)
+library(GGally)
+library(tidyverse)
 
 #######################################
 # plot
@@ -390,3 +397,261 @@ p + geom_point() +
        y = "Donor Procurement",
        color = "Welfare State") +
   guides(color = "none")
+
+#######################################
+# plot18
+#######################################
+# data
+p <- ggplot(data = gapminder,
+            mapping = aes(x = log(gdpPercap), y = lifeExp))
+
+# ロバスト線形単回帰モデル
+p + geom_point(alpha = 0.1) +
+  geom_smooth(color = "tomato",fill = "tomato",method = MASS::rlm) +
+  geom_smooth(color = "steelblue",fill = "steelblue",method = "lm")
+
+# 多項式回帰モデル
+p + geom_point(alpha = 0.1) +
+  geom_smooth(color = "tomato",method =　"lm",size = 1.2,
+              formula = y ~ splines::bs(x,df = 3),se = FALSE) 
+
+# 分位点回帰モデル
+# https://stackoverflow.com/questions/59184868/geom-quantile-full-range-in-ggplot2
+# https://qiita.com/kenmatsu4/items/03739db76aa010b7c6fe
+p + geom_point(alpha = 0.1) +
+  geom_quantile(color = "tomato",size = 1.2,method =　"rqss",
+              lambda = 1,quantiles = c(0.20,0.5,0.85)) 
+
+# カラーパレット
+model_colors <- RColorBrewer::brewer.pal(3,"Set1")
+
+# モデルへの凡例追加
+p0 <- ggplot(data = gapminder,
+            mapping = aes(x = log(gdpPercap), y = lifeExp))
+
+p1 <- p0 + geom_point(alpha=0.2) +
+  geom_smooth(method = "lm",aes(color = "OLS",fill = "OLS")) +
+  geom_smooth(method = "lm",formula = y ~ splines::bs(x,df = 3),
+              aes(color = "Cubic Spline",fill = "Cubic Spline")) +
+  geom_smooth(method = "loess",
+              aes(color = "LOESS",fill = "LOESS"))
+p1 + scale_color_manual(name = "Models",values = model_colors) +
+  scale_fill_manual(name = "Models",values = model_colors) +
+  theme(legend.position = "top")
+
+# 線形モデルによる予測の可視化
+# data加工
+# https://qiita.com/maech/items/83d1b3a85b976ffcdaf6
+out <- lm(formula = lifeExp ~ gdpPercap + pop + continent,data = gapminder)
+summary(out)
+
+min_gdp <- min(gapminder$gdpPercap)
+max_gdp <- max(gapminder$gdpPercap)
+med_pop <- median(gapminder$pop)
+pred_df <- expand.grid(gdpPercap = (seq(from = min_gdp,
+                                        to = max_gdp,
+                                        length.out = 100)),
+                       pop = med_pop,
+                       continent = c("Africa","Americas",
+                                     "Asia","Europe","Oceania"))
+dim(pred_df)
+
+pred_out <- predict(object = out,
+                    newdata = pred_df,
+                    interval = "predict")
+head(pred_out,5)
+
+pred_df <- cbind(pred_df,pred_out)
+head(pred_df,5)
+
+p <- ggplot(data = subset(pred_df,continent %in% c("Africa","Europe")),
+            aes(x = gdpPercap,
+                y = fit,ymin = lwr,ymax = upr,
+                color = continent,
+                fill = continent,
+                group = continent)
+            )
+p + geom_point(data = subset(gapminder,
+                             continent %in% c("Africa","Europe")),
+               aes(x = gdpPercap,y = lifeExp,
+                   color = continent),
+               alpha = 0.5,
+               inherit.aes = FALSE) +
+  geom_line() +
+  geom_ribbon(alpha = 0.2,color = NA) +
+  scale_x_log10(labels  = scales::dollar)
+
+# 線形回帰モデルの推定量を用いた図
+# data作成
+out_comp <- tidy(out)
+p <- ggplot(out_comp,mapping = aes(x = term,
+                                   y = estimate))
+p + geom_point() +coord_flip()
+
+# ラベルの編集・信頼区間の追加を行った線形回帰モデル
+out_conf <- tidy(out,conf.int = TRUE) %>% 
+  subset(.,term %nin% "(Intercept)")
+out_conf$nicelabs <- prefix_strip(out_conf$term,"continent")
+
+p <- ggplot(out_conf,mapping = aes(x = reorder(nicelabs,estimate),
+                                   y = estimate,ymin = conf.low,ymax = conf.high))
+p + geom_pointrange()+ coord_flip() +labs(x = NULL,y = "OLS estimate")
+
+# 予測値・残差プロット
+out_aug <- augment(out,data = gapminder)
+p <- ggplot(data = out_aug,
+            mapping = aes(x = .fitted,y = .resid))
+p + geom_point()
+
+# カプランマイヤー生存曲線
+out_cph <- coxph(Surv(time,status)~age + sex,data = lung)
+out_surv <- survfit(out_cph)
+out_tidy <- tidy(out_surv)
+
+p <- ggplot(data = out_tidy,mapping = aes(time,estimate))
+p + geom_line()+
+  geom_ribbon(mapping = aes(ymin = conf.low,ymax = conf.high),alpha = 0.2)
+
+# 大陸ごとに層別したGDPと平均寿命に関する推定値
+fit_ols <- function(df){
+  lm(lifeExp ~ log(gdpPercap),data = df)
+}
+
+eu77 <- gapminder %>% 
+  filter(continent == "Europe",year == 1977)
+
+fit <- lm(lifeExp ~ log(gdpPercap),data = eu77)
+summary(fit)
+
+out_tidy <- gapminder %>% 
+  group_by(continent,year) %>% 
+  nest() %>% 
+  mutate(model = map(data,fit_ols),
+         tidied = map(model,tidy)) %>% 
+  unnest(tidied) %>% 
+  select(!c(data,model)) %>% 
+  filter(term %nin% "(Intercept)" &
+           continent %nin% "Oceania")
+
+p <- ggplot(data = out_tidy,
+            mapping = aes(x = year,y = estimate,
+                          ymin = estimate - 2 * std.error,
+                          ymax = estimate + 2 * std.error,
+                          group = continent,color = continent))
+p + geom_pointrange(position = position_dodge(width = 1)) +
+  scale_x_continuous(breaks = unique(gapminder$year)) +
+  theme(legend.position = "top")+
+  labs(x = "Year", y = "Estimate",color = "Continent")
+
+#平均限界効果
+gss_sm$polviews_m <- relevel(gss_sm$polviews,ref = "Moderate")
+out_bo <- glm(obama ~ polviews_m + sex*race,
+              family = "binomial",data = gss_sm)
+summary(out_bo)
+
+bo_m <- margins(out_bo)
+summary(bo_m)
+
+bo_gg <- as_tibble(summary(bo_m))
+prefixes <- c("polvies_m","sex")
+bo_gg$factor<-prefix_strip(bo_gg$factor,prefixes)
+bo_gg$factor<-prefix_replace(bo_gg$factor,"race","Race: ")
+
+p<- ggplot(data = bo_gg,
+           aes(x = reorder(factor,AME),
+               y = AME,ymin = lower,ymax = upper
+               ))
+p + geom_hline(yintercept = 0,color = "gray80")+
+  geom_pointrange()+coord_flip()+
+  labs(x = NULL,y = "Average Marginal Effect")
+
+# 条件付き効果の可視化
+pv_cv <- cplot(out_bo,x = "sex",draw = FALSE)
+p <- ggplot(data = pv_cv,aes(x = reorder(xvals,yvals),
+                             y = yvals,ymin = lower,ymax = upper))
+p + geom_hline(yintercept = 0,color = "gray80")+
+  geom_pointrange()+coord_flip()+
+  labs(x = NULL,y = "Conditional Effect")
+
+# 複雑な調査データの可視化
+# データ加工
+options(survey.lonely.psu = "adjust")
+options(na.action = "na.pass")
+
+gss_wt <- subset(gss_lon,year>1974) %>% 
+  mutate(stratvar = interaction(year,vstrat)) %>% 
+  as_survey_design(ids = vpsu,
+                   strata = stratvar,
+                   weight = wtssall,
+                   nest = TRUE)
+
+out_grp <- gss_wt %>% 
+  filter(year %in% seq(1976,2016,by = 4)) %>% 
+  group_by(year,race,degree) %>% 
+  summarize(prop = survey_mean(na.rm = TRUE))
+
+out_mrg <- gss_wt %>% 
+  filter(year %in% seq(1976,2016,by = 4)) %>% 
+  mutate(racedeg = interaction(race,degree)) %>% 
+  group_by(year,race,degree) %>% 
+  summarize(prop = survey_mean(na.rm = TRUE)) %>% 
+  separate(racedeg,sep = "\\.",into = c("race","degree"))
+
+# 教育歴の加重推定値
+p <- ggplot(data = subset(out_grp,race %nin% "Other"),
+            mapping = aes(x = degree,
+                          y = prop,
+                          ymin = prop - 2*prop_se,
+                          ymax = prop + 2*prop_se,
+                          fill = race,
+                          color = race,
+                          group = race))
+dodge <- position_dodge(width = 0.9)
+p + geom_col(position = dodge,alpha = 0.2)+
+  geom_errorbar(position = dodge,width = 0.2)+
+  scale_x_discrete(labels = scales::wrap_format(10))+
+  scale_y_continuous(labels = scales::percent)+
+  scale_color_brewer(type = "qual", palette = "Dark2")+
+  scale_fill_brewer(type = "qual", palette = "Dark2")+
+  labs(title = "title",
+       subtitle = "subtitle",
+       fill = "Race",
+       color = "Race",
+       x = NULL,y = "Percent")+
+  facet_wrap(~ year,ncol = 2) +
+  theme(legend.position = "top")
+
+#　教育歴でfacet
+p <- ggplot(data = subset(out_grp,race %nin% "Other"),
+            mapping = aes(x = year,
+                          y = prop,
+                          ymin = prop - 2*prop_se,
+                          ymax = prop + 2*prop_se,
+                          fill = race,
+                          color = race,
+                          group = race))
+
+p + geom_ribbon(alpha = 0.2,aes(color = NULL))+
+  geom_line()+
+  facet_wrap(~ degree,ncol = 1)+
+  scale_y_continuous(labels = scales::percent)+
+  scale_color_brewer(type = "qual", palette = "Dark2")+
+  scale_fill_brewer(type = "qual", palette = "Dark2")+
+  labs(title = "title",
+       subtitle = "subtitle",
+       fill = "Race",
+       color = "Race",
+       x = NULL,y = "Percent")+
+  theme(legend.position = "top")
+
+# coefplotを使った可視化
+out <- lm(formula = lifeExp ~ log(gdpPercap)+log(pop)+continent,
+          data = gapminder)
+coefplot(out,sort = "magnitude",intercept = FALSE)
+
+# 散布図行列
+organdata_sm <- organdata %>% 
+  select(donors,pop_dens,pubhealth,roads,consent_law)
+ggpairs(data = organdata_sm,mapping = aes(color = consent_law),
+        upper = list(continuous = wrap("density"),combo = "box_no_facet"),
+        lower = list(continuous = wrap("points"),combo = "dot_no_facet"))
