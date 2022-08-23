@@ -13,6 +13,8 @@ library(survey)
 library(srvyr)
 library(coefplot)
 library(GGally)
+library(maps)
+library(ggthemes)
 library(tidyverse)
 
 #######################################
@@ -655,3 +657,104 @@ organdata_sm <- organdata %>%
 ggpairs(data = organdata_sm,mapping = aes(color = consent_law),
         upper = list(continuous = wrap("density"),combo = "box_no_facet"),
         lower = list(continuous = wrap("points"),combo = "dot_no_facet"))
+
+#######################################
+# plot19
+#######################################
+# 大統領選挙の結果
+party_colors <- c("#2E74C0","#CB454A")
+p0 <- ggplot(data = subset(election,st %nin% "DC"),
+             mapping = aes(x = r_points,
+                           y = reorder(state,r_points),
+                           color = party))
+p1 <- p0 + geom_vline(xintercept = 0,color = "gray30") +
+  geom_point(size = 2)
+p2 <- p1 + scale_color_manual(values = party_colors)
+p3 <- p2 + scale_x_continuous(breaks = c(-30,-20,-10,0,10,20,30,40),
+                              labels = c("30\n (Clinton)","20","10","0",
+                                         "10","20","30","40\n(Trump)"))
+p3 + facet_wrap(~ census,ncol = 1,scales = "free_y") + 
+  guides(color = "none") + labs(x = "point Margin",y = "") +
+  theme(axis.text = element_text(size = 8))
+
+# アメリカの白地図
+us_states <- map_data("state")
+p <- ggplot(data = us_states,
+            mapping = aes(x = long,y = lat,
+                          group = group))
+p + geom_polygon(fill = "white",color = "black")
+
+# 州ごとの塗分け
+p <- ggplot(data = us_states,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = region))
+p + geom_polygon(color = "gray90",size = 0.1) +
+  guides(fill = "none")
+
+# 投影方法の変更
+p <- ggplot(data = us_states,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = region))
+p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) +
+  guides(fill = "none")
+
+# 選挙結果
+election$region <- tolower(election$state)
+dat <- left_join(us_states,election)
+
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = party))
+p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) 
+
+# 州ごとの結果
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = party))
+p1 <- p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) 
+p2 <- p1 + scale_fill_manual(values = party_colors) +
+  labs(title = "Title",fill = NULL)
+p2 + theme_map()
+
+
+# 得票率
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = pct_trump))
+p1 <- p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) 
+p1 + labs(title = "Vote")+ theme_map()+labs(fill = "percent")
+
+p2 <- p1 + scale_fill_gradient(low = "white",high = "#CB454A") + 
+  labs(title = "Title")
+p2 + theme_map() + labs("Percent")
+
+# 対立
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = d_points))
+p1 <- p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) 
+p2 <- p1 + scale_fill_gradient2() + labs(title = "Title")
+p2 + theme_map() + labs("Percent")
+
+p3 <-  p1 + scale_fill_gradient2(low = "red",
+                                 mid = scales::muted("purple"),
+                                 high = "blue",
+                                 breaks = c(-25,0,25,50,75)) + labs(title = "Title")
+p3 + theme_map() + labs(fill = "Percent")
+
+# 一部データ除外
+p <- ggplot(data = subset(dat,region %nin% "district of columbia" ),
+            mapping = aes(x = long,y = lat,
+                          group = group,fill = d_points))
+p1 <- p + geom_polygon(color = "gray90",size = 0.1) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45) 
+p3 <-  p1 + scale_fill_gradient2(low = "red",
+                                 mid = scales::muted("purple"),
+                                 high = "blue",
+                                 breaks = c(-25,0,25,50,75)) + labs(title = "Title")
+p3 + theme_map() + labs(fill = "Percent")
