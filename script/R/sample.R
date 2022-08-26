@@ -15,6 +15,8 @@ library(coefplot)
 library(GGally)
 library(maps)
 library(ggthemes)
+library(statebins)
+library(viridis)
 library(tidyverse)
 
 #######################################
@@ -758,3 +760,148 @@ p3 <-  p1 + scale_fill_gradient2(low = "red",
                                  high = "blue",
                                  breaks = c(-25,0,25,50,75)) + labs(title = "Title")
 p3 + theme_map() + labs(fill = "Percent")
+
+#群単位での人口密度
+dat <- county_map %>% 
+  left_join(.,county_data,by = "id")
+
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          fill = pop_dens,
+                          group = group))
+p1 <- p +  geom_polygon(color = "gray90",size = 0.05) + coord_equal() 
+p2 <- p1 + scale_fill_brewer(palette = "Blues",
+                             labels = c("0-10","10-50","50-100","100-500",
+                                        "500-1,000","1,000-5,000",">5,000"))
+p2 + labs(fill = "Population per\nsquare mile") +
+  theme_map() +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme(legend.position = "bottom")
+
+# アフリカ系アメリカ人の人口割合
+p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          fill = pct_black,
+                          group = group))
+p1 <- p +  geom_polygon(color = "gray90",size = 0.05) + coord_equal() 
+p2 <- p1 + scale_fill_brewer(palette = "Greens")
+p2 + labs(fill = "US Population,Pecent Black") +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme_map() +
+  theme(legend.position = "bottom")
+
+# カラーパレットの反転
+orange_pal <- RColorBrewer::brewer.pal(n = 6,name = "Oranges")
+orange_rev <- rev(orange_pal)
+
+gun_p <- ggplot(data = dat,
+            mapping = aes(x = long,y = lat,
+                          fill = su_gun6,
+                          group = group))
+gun_p1 <- gun_p +  geom_polygon(color = "gray90",size = 0.05) + coord_equal() 
+gun_p2 <- gun_p1 + scale_fill_manual(values = orange_pal)
+gun_p2 + labs(title = "Title",fill = "Rate per 100,000 pop.") +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme_map() +
+  theme(legend.position = "bottom")
+
+pop_p <- ggplot(data = dat,
+                mapping = aes(x = long,y = lat,
+                              fill = pop_dens6,
+                              group = group))
+pop_p1 <- pop_p +  geom_polygon(color = "gray90",size = 0.05) + coord_equal() 
+pop_p2 <- pop_p1 + scale_fill_manual(values = orange_rev)
+pop_p2 + labs(title = "Title",fill = "People per square mile") +
+  guides(fill = guide_legend(nrow = 1)) +
+  theme_map() +
+  theme(legend.position = "bottom")
+
+# state bins
+  statebins(
+       state_data = election,
+       state_col = "state",
+       value_col = "pct_trump",
+       dark_label = "white",
+       name = "Percent Trump",
+       palette = "Reds",
+       direction = 1,
+       font_size = 3
+     ) + theme_statebins(legend_position = "top")
+  
+statebins(
+    state_data = subset(election,st %nin% "DC"),
+     state_col = "state",
+     light_label = "black",
+     value_col = "pct_clinton",
+     name = "Percent Clinton",
+   palette = "Blues",
+     font_size = 3
+   ) + theme_statebins(legend_position = "top")
+
+statebins(
+  state_data = election,
+  state_col = "st",
+  value_col = "party",
+  light_label = "white",
+  name = "Winner",
+  font_size = 3,
+  ggplot2_scale_function = scale_fill_manual,
+  values = c(Republican = "darkred",
+             Democratic = "royalblue"),
+  labels = c("Clinton","Trump")
+) + theme_statebins(legend_position = "right")
+
+election %>% 
+  mutate(pct_trump = cut(pct_trump,breaks = 4,
+                         labels = c("4-21","21-37","37-53","53-70"))) %>% 
+  statebins(
+    value_col = "pct_trump",
+    dark_label = "white",
+    name = "Percent Trump",
+    palette = "Reds",
+    ggplot2_scale_function = scale_fill_brewer,
+    font_size = 3
+  ) + theme_statebins(legend_position = "top")
+
+# 複数の地図を１枚にまとめる
+opiates$region <- tolower(opiates$state)
+dat <- left_join(us_states,opiates)
+
+p0 <- ggplot(data = subset(dat,year > 1999),
+             mapping = aes(x = long, y = lat,
+                           group = group,
+                           fill = adjusted))
+
+p1 <- p0 + geom_polygon(color = "gray90",size = 0.05) +
+  coord_map(projection = "albers",lat0 = 39,lat1 = 45)
+
+p2 <- p1 + scale_fill_viridis_c(option = "plasma")
+
+p2 + theme_map() + facet_wrap(~ year,ncol = 3)+
+  theme(legend.position = "bottom",
+        strip.background = element_blank()) +
+  labs(fill = "fill",title = "title")
+
+# 全データ
+p <- ggplot(data = opiates,
+            mapping = aes(x = year,y = adjusted,
+                          group = state))
+p + geom_line(color = "gray70")
+
+#時系列データの区画化
+p0 <- ggplot(data = drop_na(opiates,division_name),
+             mapping = aes(x = year,y = adjusted))
+p1 <- p0 + geom_line(color = "gray70",
+                     mapping = aes(group=state))
+p2 <- p1 + geom_smooth(mapping = aes(group = division_name),
+                       se = FALSE)
+p3 <- p2 + geom_text_repel(data = subset(opiates,
+                                         year == max(year) & abbr != "DC"),
+                           mapping = aes(x = year,y = adjusted,label = abbr),
+                           size = 1.8,segment.color = NA,nudge_x = 30) +
+  coord_cartesian(c(min(opiates$year),
+                    max(opiates$year)))
+
+p3 + labs(x = "",y = "Rate per 100,000 population",
+          title = "Title") +
+  facet_wrap(~ reorder(division_name,-adjusted,na.rm = TRUE),nrow = 3)
