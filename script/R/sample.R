@@ -905,3 +905,44 @@ p3 <- p2 + geom_text_repel(data = subset(opiates,
 p3 + labs(x = "",y = "Rate per 100,000 population",
           title = "Title") +
   facet_wrap(~ reorder(division_name,-adjusted,na.rm = TRUE),nrow = 3)
+
+#######################################
+# plot19
+#######################################
+# data
+p <- ggplot(data = subset(asasec, Year == 2014),
+            mapping = aes(x = Members,
+                          y = Revenues,
+                          label = Sname))
+p + geom_point() + geom_smooth()
+
+# data
+p <- ggplot(data = subset(asasec, Year == 2014),
+            mapping = aes(x = Members,
+                          y = Revenues,
+                          label = Sname))
+p + geom_point(mapping = aes(color = Journal)) + geom_smooth(mathod = "lm")
+
+# data
+p <- ggplot(data = subset(asasec, Year == 2014),
+            mapping = aes(x = Members,
+                          y = Revenues,
+                          label = Sname))
+p1 <- p + 
+  geom_smooth(method = "lm", se = FALSE, color = "gray80") +
+  geom_point(mapping = aes(color = Journal))
+
+p2 <- p1 +
+  geom_text_repel(data = subset(asasec, Year == 2014 & Revenues > 7000),size = 2)
+
+p3 <- p2 +
+  labs(x = "Membership",y = "Revenues",
+       color = "Section",title = "ASA",
+       subtitle = "subtitle",
+       caption = "Source: ASA")
+
+p4 <- p3 +
+  scale_y_continuous(labels = scales::dollar) +
+  theme(legend.position = "bottom")
+
+p4
