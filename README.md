@@ -1,1 +1,1 @@
-# visualization data
+# Rを使った可視化データ置き場
