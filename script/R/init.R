@@ -21,7 +21,9 @@ my_package <-c("tidyverse",
               "srvyr",
               "viridis",
               "viridisLite",
-              "devtools")
+              "devtools",
+              "rayshader",
+              "rgl")
 install.packages(my_package)
 devtools::install_github("kjhealy/socviz")
 # .libPaths('C:/Program Files/R/R-4.1.2/library')
